@@ -1,0 +1,38 @@
+version: "3"
+networks:
+  traefik_network:
+    external:
+      name: homelabos_traefik
+
+services:
+  esphome:
+    container_name: esphome
+    image: esphome/esphome
+    volumes:
+      - /var/homelabos/esphome:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /var/homelabos/traefik/conf.d:/config/
+    restart: unless-stopped
+    privileged: true
+    environment:
+      - ESPHOME_DASHBOARD_USE_PING=true
+    networks:
+      - traefik_network
+    ports:
+      - 6052:6052
+      - 6053:6053
+    labels:
+      - "traefik.http.services.esphome.loadbalancer.server.scheme=http"
+      - "traefik.http.services.esphome.loadbalancer.server.port=6052"
+      - "traefik.enable=true"
+      - "traefik.docker.network=homelabos_traefik"
+      - "traefik.http.routers.esphome-http.service=esphome"
+      - "traefik.http.routers.esphome-http.rule=Host(`esphome.remote.serversurge.co.uk`)"
+      - "traefik.http.routers.esphome-http.entrypoints=http"
+      - "traefik.http.routers.esphome-http.middlewares=customFrameHomelab@file"
+      - "traefik.http.routers.esphome.service=esphome"
+      - "traefik.http.routers.esphome.rule=Host(`esphome.remote.serversurge.co.uk`)"
+      - "traefik.http.routers.esphome.entrypoints=https"
+      - "traefik.http.routers.esphome.middlewares=customFrameHomelab@file"
+      - "traefik.http.routers.esphome.tls=true"
+      - "traefik.http.routers.esphome.tls.certresolver=http"
